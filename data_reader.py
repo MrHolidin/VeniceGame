@@ -2,7 +2,7 @@ import pandas as pd
 from enum import Enum
 from product import ProductInfo, ProductDemand, get_capacity_estimations
 from city import CityInfo
-from route import Route, RouteType, connect_routes
+from route import Route, RouteType
 from trade_map import TradeMap
 
 
@@ -64,22 +64,11 @@ def build_trade_map(
             row["A"],
             row["B"],
             float(row["Время"].replace(",", ".")),
-            row["Тип"],
-            disaster_risk_per_unit=row["Disaster risk"],
-            assault_risk_per_unit=row["Assault risk"],
+            RouteType(row["Тип"]),
+            disaster_risk_per_unit=row["Риск бедствия, %"] * 0.01,
+            assault_risk_per_unit=row["Риск нападения, %"] * 0.01,
         )
         routes.append(route)
         routes.append(route.get_reverse())
     trade_map = TradeMap(cities, products, routes)
     return trade_map
-
-
-turn = 3
-
-products = pd.read_csv("data/products.csv")
-prices_sell = pd.read_csv(f"data/turn{turn}/sell_prices.csv")
-prices_buy = pd.read_csv(f"data/turn{turn}/buy_prices.csv")
-routes = pd.read_csv(f"data/turn{turn}/routes.csv")
-cities = pd.read_csv(f"data/turn{turn}/cities.csv")
-
-trade_map = build_trade_map(cities, products, prices_buy, prices_sell, routes)

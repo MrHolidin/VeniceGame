@@ -38,9 +38,9 @@ class TradeMap:
                             expanded_routes[(from_name, mid_name)], expanded_routes[(mid_name, to_name)]
                         )
                         if (from_name, to_name) not in expanded_routes or expanded_routes[
-                            (from_name, mid_name)
+                            (from_name, to_name)
                         ].length > united_route.length:
-                            expanded_routes[(from_name, mid_name)] = united_route
+                            expanded_routes[(from_name, to_name)] = united_route
 
         return expanded_routes
 
@@ -56,22 +56,26 @@ class TradeMap:
     def get_stat(
         self, route: Route, product: str, max_weight: float, max_capital: float, delivery_fee_by_unit: float = 0
     ) -> dict[str, float | str]:
-        price_to = self.cities[route.city_to].get_sell_prices(product)
         price_from = self.cities[route.city_from].get_buy_prices(product)
-        effective_price_diff = price_from * (1 - self.cities[route.city_to].fee) - price_to
+        price_from_with_fee = delivery_fee_by_unit * self.products[product].weight + price_from
+        price_to = self.cities[route.city_to].get_sell_prices(product)
+        effective_price_diff = price_to * (1 - self.cities[route.city_to].fee) - price_from_with_fee
         max_product_amount = min(
             self.cities[route.city_from].product_capacities[product],
             self.cities[route.city_to].product_capacities[product],
-            max_capital / (delivery_fee_by_unit * self.products[product].weight + price_from),
+            max_capital / price_from_with_fee,
             self.products[product].max_amount_by_weight(max_weight),
         )
         max_profit = max(0, max_product_amount * effective_price_diff)
+        capital_used = max_product_amount * price_from_with_fee
         return {
             "city_from": route.city_from,
             "city_to": route.city_to,
+            "length": route.length,
             "route_type": str(route.route_type),
             "effective_price_diff": effective_price_diff,
             "max_amount": max_product_amount,
+            "max_capital_used": capital_used,
             "max_profit": max_profit,
-            "profitness": max_profit / max_product_amount,
+            "profitness": (max_profit + capital_used) / capital_used,
         }
